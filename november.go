@@ -115,6 +115,20 @@ func Xcall(method string, object interface{}, args ...interface{}) ([]reflect.Va
 	return rv.MethodByName(method).Call([]reflect.Value{}), nil
 }
 
+func xType(object interface{},field string) reflect.Type{
+	rv := reflect.ValueOf(object)
+
+	if rv.Type().Kind() == reflect.Ptr {
+		rv = rv.Elem()
+		//set field value
+		if !rv.CanSet() {
+			fmt.Errorf(`type can not set field:"%s",value:"%s" new struct:%#v`+"\n", key, value, t)
+			return
+		}
+	}
+	return rv.FieldByName(field).Type()
+}
+
 func Xformat(object interface{}, data string, split func(string) ([]string, error)) bool {
 	fields, ok := Xlist(object)
 	if !ok {
@@ -129,7 +143,7 @@ func Xformat(object interface{}, data string, split func(string) ([]string, erro
 		return false
 	}
 	for idx, field := range fields {
-		Xset(object, field, values[idx])
+		Xset(object, field, values[idx].(xType(object,field)))
 
 	}
 	return true
