@@ -114,3 +114,23 @@ func Xcall(method string, object interface{}, args ...interface{}) ([]reflect.Va
 	}
 	return rv.MethodByName(method).Call([]reflect.Value{}), nil
 }
+
+func Xformat(object interface{}, data string, split func(string) ([]string, error)) bool {
+	fields, ok := Xlist(object)
+	if !ok {
+		return false
+	}
+	values, err := split(data)
+	if err != nil {
+		fmt.Errorf("cant not split data %s", data)
+		return false
+	}
+	if len(fields) != len(values) {
+		return false
+	}
+	for idx, field := range fields {
+		Xset(object, field, values[idx])
+
+	}
+	return true
+}
