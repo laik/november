@@ -17,6 +17,8 @@ package november
 
 import "reflect"
 import "fmt"
+import "strconv"
+import "strings"
 
 type Xinterface interface {
 	Ixget
@@ -88,17 +90,15 @@ func Xset(t interface{}, key string, value interface{}) (ok bool) {
 TODO:
 	//setter instance attr values; like python Setattr
 	rv := reflect.ValueOf(t)
-
-	if rv.Type().Kind() == reflect.Ptr {
+	if rv.Type().Kind() == reflect.Ptr && !rv.IsNil() {
 		rv = rv.Elem()
-		//set field value
 		if !rv.CanSet() {
 			fmt.Errorf(`type can not set field:"%s",value:"%s" new struct:%#v`+"\n", key, value, t)
 			return
 		}
 	}
-	f := rv.FieldByName(key)
-	f.Set(reflect.ValueOf(value))
+	field := rv.FieldByName(key)
+	field.Set(reflect.ValueOf(value))
 	return true
 }
 
@@ -115,36 +115,80 @@ func Xcall(method string, object interface{}, args ...interface{}) ([]reflect.Va
 	return rv.MethodByName(method).Call([]reflect.Value{}), nil
 }
 
-func xType(object interface{},field string) reflect.Type{
-	rv := reflect.ValueOf(object)
-
-	if rv.Type().Kind() == reflect.Ptr {
+//unmarsha
+func XunmarshaText(obj interface{}, data string, _func func(s string) ([]string, error)) (ok bool) {
+	text, err := _func(data)
+	if err != nil {
+		fmt.Errorf("can not split text")
+		return false
+	}
+	rv := reflect.ValueOf(obj)
+	if rv.Type().Kind() == reflect.Ptr && !rv.IsNil() {
 		rv = rv.Elem()
-		//set field value
 		if !rv.CanSet() {
-			fmt.Errorf(`type can not set field:"%s",value:"%s" new struct:%#v`+"\n", key, value, t)
-			return
+			return false
 		}
 	}
-	return rv.FieldByName(field).Type()
-}
-
-func Xformat(object interface{}, data string, split func(string) ([]string, error)) bool {
-	fields, ok := Xlist(object)
-	if !ok {
+	if len(text) != rv.NumField() {
 		return false
 	}
-	values, err := split(data)
-	if err != nil {
-		fmt.Errorf("cant not split data %s", data)
-		return false
-	}
-	if len(fields) != len(values) {
-		return false
-	}
-	for idx, field := range fields {
-		Xset(object, field, values[idx].(xType(object,field)))
-
+	for i := 0; i < rv.NumField(); i++ {
+		kind := rv.Field(i).Type().Kind()
+		value := text[i]
+		switch kind {
+		case reflect.Int, reflect.Int16, reflect.Int32, reflect.Int64:
+			switch kind {
+			case reflect.Int8:
+				out, err := strconv.ParseInt(value, 10, 8)
+				if err != nil {
+					fmt.Errorf("string[%s] covert Int8 fail. %s", value, err)
+				}
+				rv.Field(i).Set(reflect.ValueOf(int8(out)))
+			case reflect.Int16:
+				out, err := strconv.ParseInt(value, 10, 16)
+				if err != nil {
+					fmt.Errorf("string[%s] covert Int16 fail. %s", value, err)
+				}
+				rv.Field(i).Set(reflect.ValueOf(int16(out)))
+			case reflect.Int32:
+				out, err := strconv.ParseInt(value, 10, 32)
+				if err != nil {
+					fmt.Errorf("string[%s] covert Int32 fail. %s", value, err)
+				}
+				rv.Field(i).Set(reflect.ValueOf(int32(out)))
+			case reflect.Int64:
+				out, err := strconv.ParseInt(value, 10, 64)
+				if err != nil {
+					fmt.Errorf("string[%s] covert int64 fail. %s", value, err)
+				}
+				rv.Field(i).SetInt(out)
+			default:
+				out, err := strconv.ParseInt(value, 10, 64)
+				if err != nil {
+					fmt.Errorf("string[%s] covert int fail. %s", value, err)
+				}
+				rv.Field(i).Set(reflect.ValueOf(int(out)))
+			}
+		case reflect.Float32, reflect.Float64:
+			switch kind {
+			case reflect.Float32:
+				if val, err := strconv.ParseFloat(value, 32); err == nil {
+					rv.Field(i).Set(reflect.ValueOf(float32(val)))
+				}
+			default:
+				if val, err := strconv.ParseFloat(value, 64); err == nil {
+					rv.Field(i).Set(reflect.ValueOf(val))
+				}
+			}
+		case reflect.Bool:
+			var tmp bool
+			if value == "Y" || strings.ToUpper(value) == "YES" {
+				tmp = true
+			}
+			rv.Field(i).SetBool(tmp)
+		case reflect.String:
+			rv.Field(i).SetString(value)
+		}
 	}
 	return true
 }
