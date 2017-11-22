@@ -120,7 +120,7 @@ func TestXnew(t *testing.T) {
 type NewEnergyRaw struct {
 	UUID    string `json:"UUID"`
 	SESSION string `json:"SESSION"`
-	VIN     int    `json:"VIN"`
+	VIN     string `json:"VIN"`
 	CRC     int    `json:"CRC"`
 	TIME    int    `json:"TIME"`
 	CMD     int64  `json:"CMD"`

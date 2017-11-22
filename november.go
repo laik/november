@@ -182,7 +182,7 @@ func XunmarshaText(obj interface{}, data string, _func func(s string) ([]string,
 			}
 		case reflect.Bool:
 			var tmp bool
-			if value == "Y" || strings.ToUpper(value) == "YES" {
+			if value == "Y" || strings.ToUpper(value) == "YES" || value == "1" {
 				tmp = true
 			}
 			rv.Field(i).SetBool(tmp)
