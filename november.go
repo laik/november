@@ -17,6 +17,7 @@ package november
 
 import "reflect"
 import "fmt"
+import "os"
 import "strconv"
 import "strings"
 
@@ -48,10 +49,22 @@ func Xlist(t interface{}) (field []string, ok bool) {
 	return
 }
 
+func XStruct(t interface{}) (map[string]reflect.Type, bool) {
+	//fields map[string]map[string]string
+	var struct_info map[string]reflect.Type = make(map[string]reflect.Type, 0)
+	if fields, ok := Xlist(t); ok {
+		for i := 0; i < len(fields); i++ {
+			struct_info[fields[i]] = reflect.Indirect(reflect.ValueOf(t)).FieldByName(fields[i]).Type()
+		}
+		return struct_info, true
+	}
+	return struct_info, false
+}
+
 func Xget(t interface{}, value string) (news interface{}, ok bool) {
 	//check object hasattr
 	if fields, xok := Xlist(t); xok {
-		for idx, _ := range fields {
+		for idx := range fields {
 			if fields[idx] == value {
 				goto TODO
 			}
@@ -79,7 +92,7 @@ TODO:
 func Xset(t interface{}, key string, value interface{}) (ok bool) {
 	//check object hasattr
 	if fields, xok := Xlist(t); xok {
-		for idx, _ := range fields {
+		for idx := range fields {
 			if fields[idx] == key {
 				goto TODO
 			}
@@ -107,7 +120,7 @@ func Xcall(method string, object interface{}, args ...interface{}) ([]reflect.Va
 
 	if len(args) > 0 {
 		input := make([]reflect.Value, len(args))
-		for i, _ := range args {
+		for i := range args {
 			input[i] = reflect.ValueOf(args[i])
 		}
 		return rv.MethodByName(method).Call(input), nil
@@ -117,6 +130,12 @@ func Xcall(method string, object interface{}, args ...interface{}) ([]reflect.Va
 
 //unmarsha
 func XunmarshaText(obj interface{}, data string, _func func(s string) ([]string, error)) (ok bool) {
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Fprintf(os.Stderr, "XunmarshatTest error %s", err)
+		}
+	}()
+
 	text, err := _func(data)
 	if err != nil {
 		fmt.Errorf("can not split text")
@@ -191,4 +210,20 @@ func XunmarshaText(obj interface{}, data string, _func func(s string) ([]string,
 		}
 	}
 	return true
+}
+
+func IsStructPtr(v interface{}) bool {
+	t := reflect.TypeOf(v)
+	return t.Kind() == reflect.Ptr && t.Elem().Kind() == reflect.Struct
+}
+
+func IsNilOrZero(_val, _type interface{}) bool {
+	v := reflect.ValueOf(_val)
+	t := reflect.TypeOf(_type)
+	switch v.Kind() {
+	default:
+		return reflect.DeepEqual(v.Interface(), reflect.Zero(t).Interface())
+	case reflect.Interface, reflect.Ptr:
+		return v.IsNil()
+	}
 }
