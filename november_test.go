@@ -5,8 +5,6 @@ import "sync"
 import "fmt"
 import "strings"
 
-//import . "github.com/laik/november"
-
 import "reflect"
 
 type moduleTest struct {
