@@ -6,19 +6,6 @@ import "os"
 import "strconv"
 import "strings"
 
-type Xinterface interface {
-	Ixget
-	Ixset
-}
-
-type Ixget interface {
-	Get(key string) interface{}
-}
-
-type Ixset interface {
-	Set(value map[string]interface{}) bool
-}
-
 func Xlist(t interface{}) (field []string, ok bool) {
 	// enum instance field
 	field = make([]string, 0)
@@ -34,7 +21,7 @@ func Xlist(t interface{}) (field []string, ok bool) {
 	return
 }
 
-func XStruct(t interface{}) (map[string]reflect.Type, bool) {
+func Xstruct(t interface{}) (map[string]reflect.Type, bool) {
 	//fields map[string]map[string]string
 	var struct_info map[string]reflect.Type = make(map[string]reflect.Type, 0)
 	if fields, ok := Xlist(t); ok {
@@ -197,12 +184,12 @@ func XunmarshaText(obj interface{}, data string, _func func(s string) ([]string,
 	return true
 }
 
-func IsStructPtr(v interface{}) bool {
+func XisStructPtr(v interface{}) bool {
 	t := reflect.TypeOf(v)
 	return t.Kind() == reflect.Ptr && t.Elem().Kind() == reflect.Struct
 }
 
-func IsNilOrZero(_val, _type interface{}) bool {
+func XisNilOrZero(_val, _type interface{}) bool {
 	v := reflect.ValueOf(_val)
 	t := reflect.TypeOf(_type)
 	switch v.Kind() {
